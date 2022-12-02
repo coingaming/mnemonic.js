@@ -3,7 +3,7 @@
   "version": "1.0.1",
   "description": "",
   "license": "UNLICENSED",
-  "main": "dist/index.js",
+  "main": "mnemonic.js",
   "repository": {
     "type": "git",
     "url": "git@github.com:coingaming/mnemonic.js.git"
