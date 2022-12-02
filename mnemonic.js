@@ -8,109 +8,114 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
 // AMD. Register as an anonymous module.
-define([], function () {
-    return factory();
-});
-    } else if (typeof module !== 'undefined' && module.exports) {
-module.exports = factory();
-    } else {
+        define([], function () {
+            return factory();
+        });
+    }
+    else if (typeof module !== 'undefined' && module.exports) {
+        module.exports = factory();
+    }
+    else {
 // Browser globals
-root.Mnemonic = factory();
+        root.Mnemonic = factory();
     }
 }(this, function () {
 
     var _crypto;
 
     var getRandom = function (bits) {
-var random = new Uint32Array(bits / 32);
-window[_crypto].getRandomValues(random);
-return random;
+        var random = new Uint32Array(bits / 32);
+        window[_crypto].getRandomValues(random);
+        return random;
     };
 
     if (typeof window !== 'undefined') { //a browser
-if (window.crypto && window.crypto.getRandomValues) {
-    _crypto = 'crypto';
-} else if (window.msCrypto && window.msCrypto.getRandomValues) {
-    _crypto = 'msCrypto';
-}
-    } else { //node.js
-var crypto = require('crypto');
-getRandom = function (bits) {
-    var randomBytes = crypto.randomBytes(bits / 8),
-random = [];
-    for (var i = 0; i < (bits / 32); i++) {
-random.push(randomBytes.readUInt32BE(4 * i));
+        if (window.crypto && window.crypto.getRandomValues) {
+            _crypto = 'crypto';
+        }
+        else if (window.msCrypto && window.msCrypto.getRandomValues) {
+            _crypto = 'msCrypto';
+        }
     }
-    return random;
-};
+    else { //node.js
+        var crypto = require('crypto');
+        getRandom = function (bits) {
+            var randomBytes = crypto.randomBytes(bits / 8),
+               random = [];
+            for (var i = 0; i < (bits / 32); i++) {
+                random.push(randomBytes.readUInt32BE(4 * i));
+            }
+            return random;
+        };
     }
 
     var Mnemonic = function (args) {
-var bits, i, l, w1, w2, w3, n;
+        var bits;
 
-if (typeof args === 'undefined' || typeof args === 'number') {
-    // Create a new instance of mnemonic
-    bits = args || 96;
-    if (bits % 32 !== 0) {
-throw 'Can only generate 32/64/96/128 bit passwords';
-    }
-    this.seed = getRandom(bits);
-} else if (args instanceof Uint32Array) {
-    this.seed = args;
-}
-return this;
+        if (typeof args === 'undefined' || typeof args === 'number') {
+            // Create a new instance of mnemonic
+            bits = args || 96;
+            if (bits % 32 !== 0) {
+                throw 'Can only generate 32/64/96/128 bit passwords';
+            }
+            this.seed = getRandom(bits);
+        }
+        else if (args instanceof Uint32Array) {
+            this.seed = args;
+        }
+        return this;
     };
 
     Mnemonic.prototype.toHex = function () {
-var l = this.seed.length, res = '', i = 0;
-for (; i < l; i++) {
-    res += ('00000000' + this.seed[i].toString(16)).substr(-8);
-}
-return res;
+        var l = this.seed.length, res = '', i = 0;
+        for (; i < l; i++) {
+            res += ('00000000' + this.seed[i].toString(16)).substr(-8);
+        }
+        return res;
     };
 
     Mnemonic.prototype.toWords = function () {
-var i = 0, l = this.seed.length, n = Mnemonic.wc, words = [], x, w1, w2, w3;
-for (; i < l; i++) {
-    x = this.seed[i];
-    w1 = x % n;
-    w2 = (((x / n) >> 0) + w1 ) % n;
-    w3 = (((((x / n) >> 0) / n ) >> 0) + w2 ) % n;
-    words.push(Mnemonic.words[w1]);
-    words.push(Mnemonic.words[w2]);
-    words.push(Mnemonic.words[w3]);
-}
-return words;
+        var i = 0, l = this.seed.length, n = Mnemonic.wc, words = [], x, w1, w2, w3;
+        for (; i < l; i++) {
+            x = this.seed[i];
+            w1 = x % n;
+            w2 = (((x / n) >> 0) + w1) % n;
+            w3 = (((((x / n) >> 0) / n) >> 0) + w2) % n;
+            words.push(Mnemonic.words[w1]);
+            words.push(Mnemonic.words[w2]);
+            words.push(Mnemonic.words[w3]);
+        }
+        return words;
     };
 
     Mnemonic.fromWords = function (words) {
-var i = 0, n = Mnemonic.wc,
-    l = words.length / 3,
-    seed = new Uint32Array(l),
-    w1, w2, w3;
+        var i = 0, n = Mnemonic.wc,
+           l = words.length / 3,
+           seed = new Uint32Array(l),
+           w1, w2, w3;
 
-for (; i < l; i++) {
-    w1 = Mnemonic.words.indexOf(words[3 * i]);
-    w2 = Mnemonic.words.indexOf(words[3 * i + 1]);
-    w3 = Mnemonic.words.indexOf(words[3 * i + 2]);
-    seed[i] = w1 + n * Mnemonic._mod(w2 - w1, n) + n * n * Mnemonic._mod(w3 - w2, n);
-}
+        for (; i < l; i++) {
+            w1 = Mnemonic.words.indexOf(words[3 * i]);
+            w2 = Mnemonic.words.indexOf(words[3 * i + 1]);
+            w3 = Mnemonic.words.indexOf(words[3 * i + 2]);
+            seed[i] = w1 + n * Mnemonic._mod(w2 - w1, n) + n * n * Mnemonic._mod(w3 - w2, n);
+        }
 
-return new Mnemonic(seed);
+        return new Mnemonic(seed);
     };
 
     Mnemonic.fromHex = function (hex) {
-var hexParts = hex.match(/.{1,8}/g),
-    i = 0,
-    l = hex.length / 8,
-    seed = new Uint32Array(l),
-    x;
+        var hexParts = hex.match(/.{1,8}/g),
+           i = 0,
+           l = hex.length / 8,
+           seed = new Uint32Array(l),
+           x;
 
-for (; i < l; i++) {
-    x = parseInt(hexParts[i], 16);
-    seed[i] = x;
-}
-return new Mnemonic(seed);
+        for (; i < l; i++) {
+            x = parseInt(hexParts[i], 16);
+            seed[i] = x;
+        }
+        return new Mnemonic(seed);
     };
 
     Mnemonic.wc = 1626;
