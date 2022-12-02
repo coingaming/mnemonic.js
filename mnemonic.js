@@ -123,7 +123,7 @@
 
     // make modulo arithmetic work as in math, not as in javascript ;)
     Mnemonic._mod = function (a, b) {
-return a - Math.floor(a / b) * b;
+        return a - Math.floor(a / b) * b;
     };
 
     return Mnemonic;
